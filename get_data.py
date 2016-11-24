@@ -5,6 +5,11 @@ auth.set_access_token("346366186-yvVwU27EiLm2sjVj6o2XS2VzkZgQWOvcdVAwj3H4", "4op
 
 api = tweepy.API(auth)
 
-public_tweets = api.home_timeline()
+search_params = {
+    "q": "lovelyz",
+    "lang": "en"
+}
+
+public_tweets = api.search(**search_params)
 for tweet in public_tweets:
-    print(tweet.text.encode("utf-8"))
+    print("From {}: {}".format(tweet.user.name, tweet.text))
