@@ -85,7 +85,7 @@ with open('res/corpus.csv', 'w') as csvfile:
             data['category'] = 'digitalart'
         if data['category_path'].startswith('traditional'):
             data['category'] = 'traditional'
-        data['comment'] = ' '.join([html.unescape(re.sub(re_tag_cleaner, '',
+        data['comment'] = '\n'.join([html.unescape(re.sub(re_tag_cleaner, '',
                                                 comment['body'])) for comment in
                           comments])
         pp.pprint(data)
