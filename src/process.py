@@ -13,22 +13,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import metrics
 
 deviations = dict()
-with open('res/corpus.csv','r') as csvfile:
-    reader = csv.DictReader(csvfile)
-    raw_instances = [(row['url'], row['comment'], row['category']) for row in reader]
-    for instance in raw_instances:
-        url, comment, category = instance
-        if url not in deviations:
-            deviations[url] = ([], category)
-        comments, _ = deviations[url]
-        comments.append(comment)
-
 categories = []
 comments = []
-for _, deviation in deviations.items():
-    comment, category = deviation
-    comments.append(' '.join(comment))
-    categories.append(category)
+with open('res/corpus.csv','r') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        categories.append(row['category'])
+        comments.append(row['comment'])
 
 tfidf_vectorizer = TfidfVectorizer()
 X = tfidf_vectorizer.fit_transform(comments)
@@ -42,6 +33,11 @@ classifier = RandomForestClassifier(n_estimators=10, max_depth=None,
 
 print("Classifying using Random Forest...")
 predicted = cross_val_predict(classifier, X, y, cv=10)
+
+for i in range(len(categories)):
+    if categories[i] == 'Photography':
+        print(comments[i])
+        print(categories[i] + ' --- ' + predicted[i])
 
 print("Random Forest")
 print(metrics.accuracy_score(categories, predicted))

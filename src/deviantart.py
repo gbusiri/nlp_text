@@ -1,4 +1,5 @@
 import requests
+import random
 import re
 import pprint
 import json
@@ -27,24 +28,30 @@ class API:
         return resp.text
 
     def fetch_popular(self):
-        results = []
+        data = []
         params = {
             'timerange': '1month',
             'limit': 100,
-            'offset': 0
         }
-        while len(results) < 500:
-            print(params)
-            url = '{}{}'.format(self.API_ROOT, '/browse/popular')
-            response = json.loads(self.get(url, params=params))
+        for t in [ 'photography', 'digitalart', 'traditional']:
+            params['category_path'] = t
+            params['offset'] = 0
+            results = []
+            while len(results) < 500:
+                print(params)
+                url = '{}{}'.format(self.API_ROOT, '/browse/popular')
+                response = json.loads(self.get(url, params=params))
 
-            deviations = response['results']
-            print(deviations)
-            params['offset'] = response['next_offset']
-            results += deviations
-            if not response['has_more']:
-                break
-        return results
+                deviations = response['results']
+                print(deviations)
+                params['offset'] = response['next_offset']
+                results += deviations
+                if not response['has_more']:
+                    break
+
+            data += results
+        random.shuffle(data)
+        return data[:500]
 
     def fetch_deviation_comment(self, deviation_id):
         params = {
@@ -64,15 +71,24 @@ print('Got {} deviations'.format(len(popular_deviations)))
 
 re_tag_cleaner = re.compile('<.*?>')
 with open('res/corpus.csv', 'w') as csvfile:
-    fields = ['url', 'title', 'comment', 'category']
+    fields = ['url', 'title', 'comment', 'category', 'category_path']
     writer = csv.DictWriter(csvfile, fieldnames=fields,
                             extrasaction='ignore')
     writer.writeheader()
+    cnt = 0
     for deviation in popular_deviations:
         comments = api.fetch_deviation_comment(deviation['deviationid'])
         data = { key: deviation[key] for key in fields if key in deviation }
-        for comment in comments:
-            data['comment'] = html.unescape(re.sub(re_tag_cleaner, '',
-                                                   comment['body']))
-            pp.pprint(data)
-            writer.writerow(data)
+        if data['category_path'].startswith('photography'):
+            data['category'] = 'photography'
+        if data['category_path'].startswith('digitalart'):
+            data['category'] = 'digitalart'
+        if data['category_path'].startswith('traditional'):
+            data['category'] = 'traditional'
+        data['comment'] = ' '.join([html.unescape(re.sub(re_tag_cleaner, '',
+                                                comment['body'])) for comment in
+                          comments])
+        pp.pprint(data)
+        writer.writerow(data)
+        cnt += 1
+        print(cnt)
