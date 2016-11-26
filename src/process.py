@@ -1,25 +1,47 @@
-import nltk
 import csv
 import utils
+import random
 
-import nltk.corpus
-dir(nltk.corpus)
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-texts = []
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_predict
+from sklearn.ensemble import RandomForestClassifier
 
+from sklearn import metrics
 
+deviations = dict()
 with open('res/corpus.csv','r') as csvfile:
     reader = csv.DictReader(csvfile)
-    for row in reader:
-        texts.append(row['processed_text'])
+    raw_instances = [(row['url'], row['comment'], row['category']) for row in reader]
+    for instance in raw_instances:
+        url, comment, category = instance
+        if url not in deviations:
+            deviations[url] = ([], category)
+        comments, _ = deviations[url]
+        comments.append(comment)
 
-print(texts)
+categories = []
+comments = []
+for _, deviation in deviations.items():
+    comment, category = deviation
+    comments.append(' '.join(comment))
+    categories.append(category)
 
-for text in texts:
-    tokens = nltk.word_tokenize(text)
-    tags = nltk.pos_tag(tokens)
-    entities = nltk.chunk.ne_chunk(tags)
-    print(text)
-    print(tokens)
-    print(tags)
-    print(entities)
+tfidf_vectorizer = TfidfVectorizer()
+X = tfidf_vectorizer.fit_transform(comments)
+print(X.todense())
+y = categories
+print(X)
+print(y)
+
+classifier = RandomForestClassifier(n_estimators=10, max_depth=None,
+                                    min_samples_split=2, random_state=0)
+
+print("Classifying using Random Forest...")
+predicted = cross_val_predict(classifier, X, y, cv=10)
+
+print("Random Forest")
+print(metrics.accuracy_score(categories, predicted))
